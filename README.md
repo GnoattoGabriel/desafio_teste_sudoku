@@ -1,13 +1,13 @@
 # desafio_teste_sudoku
 
-Casos de teste para o desafio **Sudoku binário (by Zulli)** da disciplina
+Casos de teste para o desafio **Sudoku binário** da disciplina
 Projeto, Implementação e Teste de Software — 2026.
 
 **Colaborador:** Gabriel de Oliveira Gnoatto — RA 23298801-2 (individual).
 
 ## 1. Especificação do desafio
 
-- **Jogo:** sudoku binário (binairo) com grade de **6 colunas × 6 linhas**.
+- **Jogo:** sudoku binário com grade de **6 colunas × 6 linhas**.
 - **Regras consideradas:**
   1. cada célula recebe apenas `0` ou `1`;
   2. cada linha e cada coluna contêm exatamente **três `0` e três `1`**;
