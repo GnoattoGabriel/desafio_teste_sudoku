@@ -1,0 +1,9 @@
+{
+  "name": "desafio-teste-sudoku",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Casos de teste em JavaScript para validarGradeBinaria (sudoku binario 6x6)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
