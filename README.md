@@ -31,9 +31,6 @@ Projeto, Implementação e Teste de Software — 2026.
   oposta. Por isso CT-06, CT-07, CT-28 e CT-29 cobrem início de linha, início de
   coluna, meio de linha e meio de coluna — as únicas posições isoláveis.
 
-O escopo deste desafio é a **validação da grade**. A IA que receber estes casos
-deve implementar a função acima de forma a satisfazer todos eles.
-
 ## 2. Funcionamento dos casos de teste
 
 Os casos estão no arquivo
