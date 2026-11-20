@@ -130,8 +130,7 @@ casos.
 
 - **Situação atual:** os 29 testes existem e falham (`# fail 29`) com a
   mensagem "Crie src/validarGradeBinaria.js exportando validarGradeBinaria".
-  Esse é o estado RED esperado: a IA deve gerar a implementação a partir dos
-  casos, sem que este repositório entregue o código do jogo.
+  Esse é o estado RED esperado.
 - **Dados JavaScript usados nos testes:** números `0`/`1`, `-1`, `0.5`, `null`,
   `undefined`, `NaN`, booleanos `true`/`false`, número `42`, objeto `{}`,
   strings `"1"` e `"110100"`, linhas com 5 ou 7 células e matrizes com 5 ou 7
