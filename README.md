@@ -46,7 +46,7 @@ contém:
 - **Pós-condições** — efeito após a execução.
 
 Cada caso do `.docx` tem um teste equivalente em `test/sudoku.test.js`, com o
-mesmo ID (CT-01 a CT-29). Assim fica atendida a exigência do enunciado:
+mesmo ID (CT-01 a CT-34). Assim fica atendida a exigência do enunciado:
 **casos de teste em Javascript para testar Javascript**. O `.docx` continua
 sendo a especificação legível; o arquivo `.js` é a versão executável dos mesmos
 casos.
@@ -84,6 +84,11 @@ casos.
 | CT-27 | Quatro células vazias (`null`) | `false` |
 | CT-28 | Três `1` consecutivos no meio de uma linha (regra isolada) | `false` |
 | CT-29 | Três `0` consecutivos no meio de uma coluna (regra isolada) | `false` |
+| CT-30 | Terceira grade válida, com padrão diferente das duas referências | `true` |
+| CT-31 | Quarta grade válida, com ordem de linhas diferente | `true` |
+| CT-32 | Quinta grade válida, com padrão diferente das duas referências | `true` |
+| CT-33 | Sexta grade válida, com padrão diferente das duas referências | `true` |
+| CT-34 | 120 grades válidas geradas deterministicamente | `true` (120 chamadas) |
 
 ### Cobertura das regras
 
@@ -98,9 +103,9 @@ casos.
 | Sem três iguais consecutivos na coluna | CT-07, CT-29 |
 | Linhas distintas | CT-08 |
 | Colunas distintas | CT-09 |
-| Caminho válido (aceitação) | CT-01, CT-13, CT-21 |
+| Caminho válido (aceitação) | CT-01, CT-13, CT-21, CT-30 a CT-34 |
 | Entrada ausente/não matriz tratada sem erro | CT-12, CT-17, CT-25, CT-26 |
-| Não mutação da entrada | CT-01, CT-21 |
+| Não mutação da entrada | todos os casos (helper `verifica`), mais CT-21 e CT-34 |
 
 ### Isolamento das regras
 
@@ -128,13 +133,17 @@ casos.
   module.exports = { validarGradeBinaria };
   ```
 
-- **Situação atual:** os 29 testes existem e falham (`# fail 29`) com a
-  mensagem "Crie src/validarGradeBinaria.js exportando validarGradeBinaria".
+- **Situação atual:** os 34 testes existem e falham (`# fail 34`) com a
+  mensagem "Crie src/validarGradeBinaria.js exportando validarGradeBinaria"
+  seguida do `stack` real de carregamento, para não esconder falhas no `require`.
   Esse é o estado RED esperado.
 - **Dados JavaScript usados nos testes:** números `0`/`1`, `-1`, `0.5`, `null`,
   `undefined`, `NaN`, booleanos `true`/`false`, número `42`, objeto `{}`,
   strings `"1"` e `"110100"`, linhas com 5 ou 7 células e matrizes com 5 ou 7
-  linhas. O CT-21 verifica também que a entrada não é alterada.
+  linhas. A não mutação é conferida em **todos** os casos pelo helper `verifica`
+  (preservando `NaN` e `undefined`); CT-21 e CT-34 reforçam a verificação.
+  O CT-34 gera 120 grades válidas por enumeração determinística — sem
+  `Math.random` nem relógio — e exige `true` em todas elas.
 
 ### Grades de referência
 
@@ -164,7 +173,12 @@ A existência da segunda grade impede que uma implementação que apenas compare
 a entrada com a grade do CT-01 seja aprovada: ela retornaria `false` no CT-13.
 A grade do CT-01 é simétrica (linha *i* = coluna *i*); a do CT-13 quebra essa
 propriedade. CT-06 a CT-09, CT-14, CT-28 e CT-29 também não derivam da grade
-original.
+original. Isso, porém, ainda permitia o atalho `equals(BASE) ||
+equals(SEGUNDA)`: ele passava nos 29 casos originais. Os CT-30 a CT-33 são
+outras grades válidas (cada uma com no máximo 2 linhas em comum com cada
+referência) e o CT-34 enumera 120 grades a partir das próprias regras. Uma
+tabela de consulta falha já no CT-30; para passar, a implementação precisa
+realmente validar as cinco regras.
 
 ## 3. Estrutura do repositório
 
@@ -180,7 +194,7 @@ desafio_teste_sudoku/
 Não há implementação do jogo neste repositório: o entregável é a especificação
 dos casos (`.docx`) e sua versão executável em JavaScript (`test/`). Abra o
 `.docx` com Microsoft Word ou LibreOffice Writer e rode `npm test` para executar
-os 29 casos.
+os 34 casos.
 
 ## 4. Colaboradores
 

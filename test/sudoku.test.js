@@ -12,9 +12,10 @@ let validarGradeBinaria;
 try {
   validarGradeBinaria = require('../src/validarGradeBinaria').validarGradeBinaria;
 } catch (erro) {
+  const detalhe = (erro && (erro.stack || erro.message)) || String(erro);
   validarGradeBinaria = () => {
     throw new Error(
-      'Crie src/validarGradeBinaria.js exportando validarGradeBinaria. ' + erro.message
+      'Crie src/validarGradeBinaria.js exportando validarGradeBinaria. ' + detalhe
     );
   };
 }
@@ -25,6 +26,17 @@ if (typeof validarGradeBinaria !== 'function') {
 }
 
 const copia = (grade) => grade.map((linha) => [...linha]);
+
+// Copia generica: preserva NaN, undefined e qualquer tipo de entrada.
+const clonar = (v) => {
+  if (Array.isArray(v)) return v.map(clonar);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const chave of Object.keys(v)) out[chave] = clonar(v[chave]);
+    return out;
+  }
+  return v;
+};
 
 // Grade de referencia — CT-01
 const BASE = [
@@ -54,7 +66,9 @@ const comCelula = (grade, linha, coluna, valor) => {
 
 const verifica = (id, descricao, entrada, esperado) => {
   test(`${id} — ${descricao}`, () => {
+    const antes = clonar(entrada);
     assert.equal(validarGradeBinaria(entrada), esperado, `${id}: ${descricao}`);
+    assert.deepEqual(entrada, antes, `${id}: a entrada nao pode ser alterada`);
   });
 };
 
@@ -149,8 +163,10 @@ verifica('CT-24', 'matriz com sete linhas', ct24, false);
 
 test('CT-25 — entradas que nao sao matrizes', () => {
   for (const entrada of [42, {}, true]) {
+    const antes = clonar(entrada);
     assert.equal(validarGradeBinaria(entrada), false,
       `CT-25: entrada ${JSON.stringify(entrada)} deve ser rejeitada`);
+    assert.deepEqual(entrada, antes, 'CT-25: a entrada nao pode ser alterada');
   }
 });
 
@@ -183,3 +199,89 @@ verifica('CT-29', 'tres 0 consecutivos no meio de uma coluna', [
   [1, 0, 1, 0, 1, 0],
   [1, 1, 0, 1, 0, 0],
 ], false);
+
+// CT-30 a CT-33 — grades validas adicionais, distintas das duas referencias.
+verifica('CT-30', 'terceira grade valida, com padrao diferente das duas referencias', [
+    [1, 1, 0, 1, 0, 0],
+    [0, 1, 1, 0, 1, 0],
+    [1, 0, 1, 0, 0, 1],
+    [0, 1, 0, 1, 1, 0],
+    [1, 0, 0, 1, 0, 1],
+    [0, 0, 1, 0, 1, 1]
+  ], true);
+
+verifica('CT-31', 'quarta grade valida, com ordem de linhas diferente', [
+    [1, 1, 0, 1, 0, 0],
+    [0, 1, 1, 0, 1, 0],
+    [1, 0, 1, 0, 0, 1],
+    [0, 1, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 1],
+    [1, 0, 0, 1, 0, 1]
+  ], true);
+
+verifica('CT-32', 'quinta grade valida, com padrao diferente das duas referencias', [
+    [1, 1, 0, 1, 0, 0],
+    [0, 1, 1, 0, 1, 0],
+    [1, 0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 1]
+  ], true);
+
+verifica('CT-33', 'sexta grade valida, com padrao diferente das duas referencias', [
+    [1, 1, 0, 1, 0, 0],
+    [0, 1, 1, 0, 1, 0],
+    [1, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 1, 0],
+    [1, 0, 1, 0, 0, 1],
+    [0, 0, 1, 0, 1, 1]
+  ], true);
+
+// CT-34 — enumeracao deterministica de 120 grades validas (sem Math.random).
+const PADROES_LINHA = (() => {
+  const r = [];
+  for (let m = 0; m < 64; m++) {
+    const linha = Array.from({ length: 6 }, (_, i) => (m >> i) & 1);
+    const tresUns = linha.filter((x) => x === 1).length === 3;
+    const semTripla = !linha.some((x, i) => i >= 2 && x === linha[i - 1] && x === linha[i - 2]);
+    if (tresUns && semTripla) r.push(linha);
+  }
+  return r;
+})();
+
+const colunasDa = (g) => Array.from({ length: 6 }, (_, c) => g.map((linha) => linha[c]));
+const temTripla = (seq) => seq.some((x, i) => i >= 2 && x === seq[i - 1] && x === seq[i - 2]);
+const ehValida = (g) =>
+  g.length === 6 &&
+  g.every((linha) => linha.length === 6 && linha.filter((x) => x === 1).length === 3) &&
+  colunasDa(g).every((coluna) => coluna.filter((x) => x === 1).length === 3) &&
+  !g.some(temTripla) && !colunasDa(g).some(temTripla) &&
+  new Set(g.map((linha) => linha.join(''))).size === 6 &&
+  new Set(colunasDa(g).map((coluna) => coluna.join(''))).size === 6;
+
+const gerarGradesValidas = (limite) => {
+  const todas = [];
+  const escolher = (linhas) => {
+    if (todas.length >= limite) return;
+    if (linhas.length === 6) {
+      if (ehValida(linhas)) todas.push(linhas);
+      return;
+    }
+    for (const padrao of PADROES_LINHA) {
+      escolher([...linhas, padrao]);
+      if (todas.length >= limite) return;
+    }
+  };
+  escolher([]);
+  return todas;
+};
+
+test('CT-34 — 120 grades validas geradas deterministicamente', () => {
+  const grades = gerarGradesValidas(120);
+  assert.equal(grades.length, 120, 'CT-34: o gerador deve produzir 120 grades');
+  for (const [i, grade] of grades.entries()) {
+    const antes = clonar(grade);
+    assert.equal(validarGradeBinaria(grade), true, `CT-34: grade ${i + 1} deve ser valida`);
+    assert.deepEqual(grade, antes, `CT-34: grade ${i + 1} nao pode ser alterada`);
+  }
+});
