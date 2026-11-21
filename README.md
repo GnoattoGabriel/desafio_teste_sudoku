@@ -49,6 +49,11 @@ Projeto, Implementação e Teste de Software — 2026.
   novo estado, com a grade inalterada. `status` reporta `'invalido'` para um
   estado inconsistente e só declara `'vitoria'` com as 36 células preenchidas e
   todas as regras satisfeitas.
+- **Casos-limite:** `vencedor` continua `null` em todos os passos intermediários
+  e só vira `true` na última jogada (CT-44). `resolver` devolve `null` quando as
+  pistas não têm solução (CT-46); `dica` sobre grade completa devolve
+  `erro: 'grade completa'` (CT-47); `preencher` com estado sem `grade`/`pistas`
+  devolve `erro: 'estado invalido'` (CT-48).
 - **Posição das triplas:** com exatamente três `0` e três `1` por linha/coluna,
   uma tripla no início ou no fim sempre traz a tripla complementar na extremidade
   oposta. Por isso CT-06, CT-07, CT-28 e CT-29 cobrem início de linha, início de
@@ -69,7 +74,7 @@ contém:
 - **Pós-condições** — efeito após a execução.
 
 Cada caso do `.docx` tem um teste equivalente em `test/sudoku.test.js`, com o
-mesmo ID (CT-01 a CT-45). Assim fica atendida a exigência do enunciado:
+mesmo ID (CT-01 a CT-48). Assim fica atendida a exigência do enunciado:
 **casos de teste em Javascript para testar Javascript**. O `.docx` continua
 sendo a especificação legível; o arquivo `.js` é a versão executável dos mesmos
 casos.
@@ -123,6 +128,9 @@ casos.
 | CT-43 | `resolver` devolve solução válida; `dica` preenche uma célula correta | grade válida / estado novo |
 | CT-44 | Ciclo completo: 20 jogadas do início até `vitoria` | `vitoria`, `vencedor: true` |
 | CT-45 | Não mutação em todo o ciclo e em jogadas recusadas | estados intactos |
+| CT-46 | `resolver` com pistas sem solução (tripla e pista conflitante) | `null` |
+| CT-47 | `dica` sobre grade completa | estado com `erro: 'grade completa'` |
+| CT-48 | `preencher` com estado malformado (`null`, `{}`, sem `grade`/`pistas`) | `erro: 'estado invalido'` |
 
 ### Cobertura das regras
 
@@ -147,6 +155,10 @@ casos.
 | Puzzle: status e fim de jogo | CT-41, CT-42, CT-44 |
 | Puzzle: solução e dica | CT-43 |
 | Puzzle: não mutação | CT-45 |
+| Vencedor apenas no fim | CT-44 |
+| Puzzle: solução impossível | CT-46 |
+| Puzzle: dica em grade completa | CT-47 |
+| Puzzle: estado malformado | CT-48 |
 
 ### Isolamento das regras
 
@@ -176,15 +188,17 @@ casos.
   };
   ```
 
-- **Situação atual:** os 45 casos viram 74 testes (CT-37 tem 12 linhas, CT-38
-  tem 6, CT-40 tem 10, CT-41 tem 3 e CT-42/CT-43 têm 2 cada) e falham:
-  `# tests 74`, `# pass 0`, `# fail 74`. Esse é o estado **RED** esperado; a
-  implementação do jogo não faz parte do entregável. As mensagens citam
-  `src/validarGradeBinaria.js` e trazem o `stack` real de carregamento.
-- **Ciclo TDD:** o GREEN (74/74), a refatoração e as variantes defeituosas
+- **Situação atual:** os 48 casos viram 81 testes (CT-37 tem 12 linhas, CT-38
+  tem 6, CT-40 tem 10, CT-41 tem 3, CT-42/CT-43 têm 2, CT-46 tem 2 e CT-48 tem
+  4) e falham: `# tests 81`, `# pass 0`, `# fail 81`. Esse é o estado **RED**
+  esperado; a implementação do jogo não faz parte do entregável. As mensagens
+  citam `src/validarGradeBinaria.js` e trazem o `stack` real de carregamento.
+- **Ciclo TDD:** o GREEN (81/81), a refatoração e as variantes defeituosas
   (tabela de consulta, sem regra 4, `preencher` permissivo, `status` prematuro,
-  `dica` fixa em `0`) foram executados em cópia descartável com implementação de
-  referência. Nenhuma implementação foi deixada neste repositório.
+  `dica` fixa em `0`, `vencedor` marcado na primeira jogada, `resolver` que
+  devolve grade para pistas impossíveis, `dica` sem distinção de grade completa
+  e `preencher` sem validação de estado) foram executados em cópia descartável
+  com implementação de referência. Nenhuma implementação foi deixada aqui.
 - **Dados JavaScript usados nos testes:** números `0`/`1`, `-1`, `0.5`, `null`,
   `undefined`, `NaN`, booleanos `true`/`false`, número `42`, objeto `{}`,
   strings `"1"` e `"110100"`, linhas com 5 ou 7 células e matrizes com 5 ou 7
@@ -250,7 +264,7 @@ desafio_teste_sudoku/
 Não há implementação do jogo neste repositório: o entregável é a especificação
 dos casos (`.docx`) e sua versão executável em JavaScript (`test/`). Abra o
 `.docx` com Microsoft Word ou LibreOffice Writer e rode `npm test` para executar
-os 45 casos.
+os 48 casos.
 
 ## 4. Colaboradores
 

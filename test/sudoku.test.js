@@ -528,7 +528,8 @@ const jogarAteVitoria = () => {
       const proximo = preencher(estado, l, c, solucao[l][c]);
       passos.push({
         linha: l, coluna: c, erro: proximo.erro,
-        status: status(proximo), intacto: deepIgual(estado, antes)
+        status: status(proximo), vencedor: proximo.vencedor,
+        intacto: deepIgual(estado, antes)
       });
       estado = proximo;
     }
@@ -546,7 +547,11 @@ verifica('CT-44', 'ciclo completo do puzzle inicial ate vitoria', {}, undefined,
     assert.deepEqual(resultado.passos.map((p) => p.erro).filter(Boolean), [],
       'CT-44: nenhuma jogada rejeitada');
     assert.ok(resultado.passos.slice(0, -1).every((p) => p.status === 'incompleto'),
-      'CT-44: nenhuma vitoria prematura');
+      'CT-44: nenhum status de vitoria antes do fim');
+    assert.ok(resultado.passos.slice(0, -1).every((p) => p.vencedor === null),
+      'CT-44: nenhum vencedor prematuro');
+    assert.equal(resultado.passos[resultado.passos.length - 1].vencedor, true,
+      'CT-44: vencedor marcado na ultima jogada');
     assert.equal(resultado.statusFinal, 'vitoria', 'CT-44: vitoria no fim');
     assert.equal(resultado.estado.vencedor, true, 'CT-44: vencedor marcado');
   }
@@ -580,3 +585,40 @@ verifica('CT-45', 'nenhum estado e alterado no ciclo, inclusive em jogadas recus
         'CT-45: erro para fora da grade');
     }
   });
+
+
+// -------------------------------------------------------------------------
+// Casos-limite adicionais: resolver sem solucao, dica em grade completa e
+// preencher com estado malformado (CT-46 a CT-48).
+// -------------------------------------------------------------------------
+
+const pistasComTripla = () => {
+  const grade = estadoInicial().grade;
+  grade[0][0] = 1;
+  grade[0][1] = 1;
+  grade[0][2] = 1;
+  return grade;
+};
+const pistasConflitantes = () => {
+  const grade = estadoInicial().grade;
+  grade[0][0] = 0;
+  return grade;
+};
+
+verifica('CT-46', 'resolver devolve null para pistas com tripla', pistasComTripla(), null,
+  { funcao: resolver });
+verifica('CT-46', 'resolver devolve null para pista que contradiz a solucao unica', pistasConflitantes(), null,
+  { funcao: resolver });
+
+const estadoCompleto = () => ({ ...estadoInicial(), grade: copia(BASE) });
+verifica('CT-47', 'dica em grade completa devolve erro sem alterar o estado', estadoCompleto(),
+  (estado) => comErro(estado, 'grade completa'),
+  { funcao: dica, deep: true });
+
+const estadosMalformados = () => [null, {},
+  { grade: estadoInicial().grade }, { pistas: estadoInicial().pistas }];
+for (const estado of estadosMalformados()) {
+  verifica('CT-48', 'preencher com estado malformado', estado,
+    (entrada) => comErro(entrada, 'estado invalido'),
+    { funcao: (entrada) => preencher(entrada, 0, 0, 1), deep: true });
+}
