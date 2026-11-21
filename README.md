@@ -20,12 +20,35 @@ Projeto, Implementação e Teste de Software — 2026.
   binairo/Takuzu e **mantida** para não alterar a especificação já entregue.
   Ela está sinalizada como premissa no `.docx` e aqui. Se o professor adotar
   apenas as regras 1, 2, 3 e 5, os casos CT-08, CT-09 e os que dependem da
-  regra 4 devem ser reavaliados.
-- **Interface esperada em JavaScript:** função `validarGradeBinaria(grid)` que
-  recebe uma matriz 6×6 e retorna `true` somente se a grade estiver completa e
-  válida; caso contrário, retorna `false`.
+  regra 4 devem ser reavaliados. Os CT-35 e CT-36 enumeram as grades com e sem
+  essa regra e registram a diferença: 4.140 válidas com regra 4, 11.222 sem
+  ela, 7.082 rejeitadas.
+- **Interface esperada em JavaScript:** o mesmo módulo
+  `src/validarGradeBinaria.js` exporta o validador e a camada de puzzle:
+
+  ```js
+  module.exports = {
+    validarGradeBinaria, // (grid) => true | false
+    criarPartida,        // () => { grade, pistas, vencedor, erro }
+    preencher,           // (estado, linha, coluna, valor) => novo estado
+    status,              // (estado) => 'incompleto' | 'invalido' | 'vitoria'
+    resolver,            // (gradeComPistas) => grade valida | null
+    dica                 // (estado) => estado com uma celula preenchida
+  };
+  ```
+
+  `validarGradeBinaria(grid)` recebe uma matriz 6×6 e retorna `true` somente se
+  a grade estiver completa e válida; caso contrário, retorna `false`. As demais
+  funções implementam o puzzle e **não alteram** o estado recebido: devolvem
+  sempre um objeto novo. Pistas são imutáveis; células vazias são `null`.
 - **Representação dos dados:** `0` e `1` são números; uma célula vazia é
-  representada por `null`. A função não deve alterar a grade recebida.
+  representada por `null`. `pistas[l][c]` é `true` nas células fixas. Nenhuma
+  função altera a grade, as pistas ou o estado recebidos.
+- **Regras do puzzle (decisão registrada):** `preencher` **bloqueia** jogadas
+  que criam tripla ou contagem acima de três — o erro volta no campo `erro` do
+  novo estado, com a grade inalterada. `status` reporta `'invalido'` para um
+  estado inconsistente e só declara `'vitoria'` com as 36 células preenchidas e
+  todas as regras satisfeitas.
 - **Posição das triplas:** com exatamente três `0` e três `1` por linha/coluna,
   uma tripla no início ou no fim sempre traz a tripla complementar na extremidade
   oposta. Por isso CT-06, CT-07, CT-28 e CT-29 cobrem início de linha, início de
@@ -46,7 +69,7 @@ contém:
 - **Pós-condições** — efeito após a execução.
 
 Cada caso do `.docx` tem um teste equivalente em `test/sudoku.test.js`, com o
-mesmo ID (CT-01 a CT-34). Assim fica atendida a exigência do enunciado:
+mesmo ID (CT-01 a CT-45). Assim fica atendida a exigência do enunciado:
 **casos de teste em Javascript para testar Javascript**. O `.docx` continua
 sendo a especificação legível; o arquivo `.js` é a versão executável dos mesmos
 casos.
@@ -89,6 +112,17 @@ casos.
 | CT-32 | Quinta grade válida, com padrão diferente das duas referências | `true` |
 | CT-33 | Sexta grade válida, com padrão diferente das duas referências | `true` |
 | CT-34 | 120 grades válidas geradas deterministicamente | `true` (120 chamadas) |
+| CT-35 | Enumeração completa: 4.140 grades com as 5 regras | `true` em todas |
+| CT-36 | Enumeração completa: 11.222 grades; 4.140 aceitas, 7.082 rejeitadas | conforme regra 4 |
+| CT-37 | 12 transformações que preservam validade em BASE e SEGUNDA | `true` em todas |
+| CT-38 | Mutação de uma célula em 6 grades válidas diferentes | `false` em todas |
+| CT-39 | `criarPartida()` com 16 pistas fixas e 20 células livres | estado determinístico |
+| CT-40 | `preencher`: aceita 0/1; rejeita pista, fora da grade, valor inválido, célula ocupada, tripla e contagem | novo estado / `erro` |
+| CT-41 | `status` nos estados incompleto, válido e inválido | `incompleto` / `vitoria` / `invalido` |
+| CT-42 | 36 células preenchidas com tripla ou contagem errada não são vitória | `invalido` |
+| CT-43 | `resolver` devolve solução válida; `dica` preenche uma célula correta | grade válida / estado novo |
+| CT-44 | Ciclo completo: 20 jogadas do início até `vitoria` | `vitoria`, `vencedor: true` |
+| CT-45 | Não mutação em todo o ciclo e em jogadas recusadas | estados intactos |
 
 ### Cobertura das regras
 
@@ -105,7 +139,14 @@ casos.
 | Colunas distintas | CT-09 |
 | Caminho válido (aceitação) | CT-01, CT-13, CT-21, CT-30 a CT-34 |
 | Entrada ausente/não matriz tratada sem erro | CT-12, CT-17, CT-25, CT-26 |
-| Não mutação da entrada | todos os casos (helper `verifica`), mais CT-21 e CT-34 |
+| Não mutação da entrada | todos os casos (helper `verifica`), mais CT-21, CT-34 e CT-45 |
+| Propriedade: todas as grades válidas | CT-35, CT-36 |
+| Transformações que preservam validade | CT-37 |
+| Mutações que quebram a validade | CT-38 |
+| Puzzle: pistas e jogadas | CT-39, CT-40 |
+| Puzzle: status e fim de jogo | CT-41, CT-42, CT-44 |
+| Puzzle: solução e dica | CT-43 |
+| Puzzle: não mutação | CT-45 |
 
 ### Isolamento das regras
 
@@ -130,20 +171,32 @@ casos.
   `validarGradeBinaria` em CommonJS:
 
   ```js
-  module.exports = { validarGradeBinaria };
+  module.exports = {
+    validarGradeBinaria, criarPartida, preencher, status, resolver, dica
+  };
   ```
 
-- **Situação atual:** os 34 testes existem e falham (`# fail 34`) com a
-  mensagem "Crie src/validarGradeBinaria.js exportando validarGradeBinaria"
-  seguida do `stack` real de carregamento, para não esconder falhas no `require`.
-  Esse é o estado RED esperado.
+- **Situação atual:** os 45 casos viram 74 testes (CT-37 tem 12 linhas, CT-38
+  tem 6, CT-40 tem 10, CT-41 tem 3 e CT-42/CT-43 têm 2 cada) e falham:
+  `# tests 74`, `# pass 0`, `# fail 74`. Esse é o estado **RED** esperado; a
+  implementação do jogo não faz parte do entregável. As mensagens citam
+  `src/validarGradeBinaria.js` e trazem o `stack` real de carregamento.
+- **Ciclo TDD:** o GREEN (74/74), a refatoração e as variantes defeituosas
+  (tabela de consulta, sem regra 4, `preencher` permissivo, `status` prematuro,
+  `dica` fixa em `0`) foram executados em cópia descartável com implementação de
+  referência. Nenhuma implementação foi deixada neste repositório.
 - **Dados JavaScript usados nos testes:** números `0`/`1`, `-1`, `0.5`, `null`,
   `undefined`, `NaN`, booleanos `true`/`false`, número `42`, objeto `{}`,
   strings `"1"` e `"110100"`, linhas com 5 ou 7 células e matrizes com 5 ou 7
   linhas. A não mutação é conferida em **todos** os casos pelo helper `verifica`
   (preservando `NaN` e `undefined`); CT-21 e CT-34 reforçam a verificação.
   O CT-34 gera 120 grades válidas por enumeração determinística — sem
-  `Math.random` nem relógio — e exige `true` em todas elas.
+  `Math.random` nem relógio — e exige `true` em todas elas. Os CT-35 e CT-36
+  enumeram **todas** as grades possíveis (4.140 e 11.222) com o mesmo
+  procedimento determinístico e conferem a entrada e a saída em cada uma.
+  A camada de puzzle usa 16 pistas fixas: nenhum caso sorteia ou lê relógio;
+  o ciclo do CT-44 extrai as jogadas de `resolver`, não de uma sequência
+  escrita à mão.
 
 ### Grades de referência
 
@@ -177,8 +230,11 @@ original. Isso, porém, ainda permitia o atalho `equals(BASE) ||
 equals(SEGUNDA)`: ele passava nos 29 casos originais. Os CT-30 a CT-33 são
 outras grades válidas (cada uma com no máximo 2 linhas em comum com cada
 referência) e o CT-34 enumera 120 grades a partir das próprias regras. Uma
-tabela de consulta falha já no CT-30; para passar, a implementação precisa
-realmente validar as cinco regras.
+tabela de consulta falha já no CT-30. Mesmo uma tabela com as 4.140 grades
+válidas não passaria: os CT-37 e CT-38 exigem as transformações e as mutações,
+os CT-35/CT-36 cobrem o espaço inteiro de grades e os CT-39 a CT-45 exigem a
+camada de puzzle, inclusive um ciclo de 20 jogadas até `vitoria` sem conhecer a
+solução de antemão.
 
 ## 3. Estrutura do repositório
 
@@ -194,7 +250,7 @@ desafio_teste_sudoku/
 Não há implementação do jogo neste repositório: o entregável é a especificação
 dos casos (`.docx`) e sua versão executável em JavaScript (`test/`). Abra o
 `.docx` com Microsoft Word ou LibreOffice Writer e rode `npm test` para executar
-os 34 casos.
+os 45 casos.
 
 ## 4. Colaboradores
 
